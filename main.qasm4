@@ -1,0 +1,66 @@
+define(`TMP0', `r0')
+
+define(`OFFSETX_A', `ra16')
+define(`OFFSETY_A', `ra17')
+
+alu.itof, TMP0, element_number, nop
+alu.fmul, OFFSETY_A, uniform_read, TMP0
+alu.fmul, OFFSETX_A, uniform_read, TMP0
+
+:main
+; 0=exit 1=vpminit 2=tmu 3=vpmflush others=exit
+alu.or, TMP0, uniform_read, #0
+
+alu.add.sf, TMP0, TMP0, #0
+bra.anyzs, , nop, nop, :exit
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+alu.add.sf, TMP0, TMP0, #-1
+bra.anyzs, , nop, nop, :vpminit
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+alu.add.sf, TMP0, TMP0, #-1
+bra.anyzs, , nop, nop, :tmu
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+alu.add.sf, TMP0, TMP0, #-1
+bra.anyzs, , nop, nop, :vpmflush
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+bra.always, , nop, nop, :exit
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+
+:tmu
+; Y coord
+alu.or, TMP0, uniform_read, #0
+;alu.fadd, tmu0_t, OFFSETY_A, TMP0
+alu.or, tmu0_t, TMP0, -
+; X coord
+alu.or, TMP0, uniform_read, #0
+bra.always, , nop, nop, :main
+alu.fadd, tmu0_s, OFFSETX_A, TMP0
+alu.never.nop.tmu0, nop, nop, nop
+alu.or, vpm_write, r4, -
+
+:vpminit
+bra.always, , nop, nop, :main
+li32, vpmvcd_wr_setup, #0b 00 000000000000 000001 1 0 10 00000000
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+
+:vpmflush
+bra.always, , nop, nop, :main
+;                             |the number of vectors to write
+li32, vpmvcd_wr_setup, #0b 10 0000001 0010000 0 1 00000000000 000
+; base addr to store
+alu.or, vpm_st_addr, uniform_read, #0
+alu.or, nop, nop, vpm_st_wait
+
+:exit
+alu.never.nop.program_end, nop, nop, nop
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
+alu.never.nop, nop, nop, nop
